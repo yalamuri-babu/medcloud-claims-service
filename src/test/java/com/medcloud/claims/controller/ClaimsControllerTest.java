@@ -51,6 +51,5 @@ class ClaimsControllerTest {
         )
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.claimId").value("CLM-10001"))
-        .andExpect(jsonPath("$.status").value("RECEIVED"));
-    }
+    .andExpect(jsonPath("$.status").value("FAILED_ON_PURPOSE"));}
 }
