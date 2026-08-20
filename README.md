@@ -11,4 +11,4 @@ The service will eventually validate:
 - Member eligibility
 - Provider information
 - Claim data
-- Claim status
+- Claim status 
