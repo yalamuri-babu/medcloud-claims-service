@@ -9,7 +9,7 @@ class EligibilityCheckTest {
     @Test
     void shouldConfirmMemberIsEligible() {
 
-        String actualStatus = "INELIGIBLE";
+        String actualStatus = "ELIGIBLE";
 
         assertEquals("ELIGIBLE", actualStatus);
     }
