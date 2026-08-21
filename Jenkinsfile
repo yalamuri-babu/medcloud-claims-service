@@ -34,17 +34,35 @@ pipeline {
                 '''
             }
         }
+
+        stage('Package') {
+            steps {
+                sh '''
+                    echo "===== MAVEN PACKAGE ====="
+                    ./mvnw package -DskipTests
+                '''
+            }
+        }
+
+        stage('Verify Artifact') {
+            steps {
+                sh '''
+                    echo "===== VERIFY JAR ====="
+                    ls -lh target/*.jar
+                '''
+            }
+        }
     }
 
     post {
         success {
             echo '===== CI RESULT ====='
-            echo 'BUILD AND TESTS PASSED'
+            echo 'BUILD, TESTS AND PACKAGE PASSED'
         }
 
         failure {
             echo '===== CI RESULT ====='
-            echo 'BUILD OR TESTS FAILED'
+            echo 'BUILD, TEST OR PACKAGE FAILED'
         }
     }
-} 
+}
