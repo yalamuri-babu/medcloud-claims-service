@@ -3,6 +3,10 @@ pipeline {
         label 'medcloud-dev'
     }
 
+    environment {
+        IMAGE_NAME = 'medcloud-claims-service'
+    }
+
     stages {
 
         stage('Build Host') {
@@ -52,17 +56,61 @@ pipeline {
                 '''
             }
         }
+
+        stage('Set Image Tag') {
+            steps {
+                script {
+                    env.IMAGE_TAG = sh(
+                        script: 'git rev-parse --short=8 HEAD',
+                        returnStdout: true
+                    ).trim()
+                }
+
+                sh '''
+                    echo "===== DOCKER IMAGE TAG ====="
+                    echo "${IMAGE_NAME}:${IMAGE_TAG}"
+                '''
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh '''
+                    echo "===== DOCKER VERSION ====="
+                    docker --version
+
+                    echo "===== DOCKER BUILD ====="
+                    docker build \
+                      -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                      .
+                '''
+            }
+        }
+
+        stage('Verify Docker Image') {
+            steps {
+                sh '''
+                    echo "===== VERIFY DOCKER IMAGE ====="
+
+                    docker image inspect \
+                      ${IMAGE_NAME}:${IMAGE_TAG} \
+                      --format='Image ID: {{.Id}}'
+
+                    docker images ${IMAGE_NAME}
+                '''
+            }
+        }
     }
 
     post {
         success {
             echo '===== CI RESULT ====='
-            echo 'BUILD, TESTS AND PACKAGE PASSED'
+            echo 'BUILD, TESTS, PACKAGE AND DOCKER IMAGE PASSED'
         }
 
         failure {
             echo '===== CI RESULT ====='
-            echo 'BUILD, TEST OR PACKAGE FAILED'
+            echo 'BUILD, TEST, PACKAGE OR DOCKER IMAGE FAILED'
         }
     }
 }
