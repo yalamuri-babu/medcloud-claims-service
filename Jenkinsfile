@@ -3,12 +3,13 @@ pipeline {
         label 'medcloud-dev'
     }
 
-environment {
-    IMAGE_NAME = 'medcloud-claims-service'
-    AWS_REGION = 'ap-south-1'
-    AWS_ACCOUNT_ID = '776751404462'
-    ECR_REPOSITORY = 'medcloud-claims-service'
-}
+    environment {
+        IMAGE_NAME = 'medcloud-claims-service'
+        AWS_REGION = 'ap-south-1'
+        AWS_ACCOUNT_ID = '776751404462'
+        ECR_REPOSITORY = 'medcloud-claims-service'
+    }
+
     stages {
 
         stage('Build Host') {
@@ -102,90 +103,97 @@ environment {
                 '''
             }
         }
-stage('ECR Login') {
-when {
-        branch 'main'
- }
-   steps {
-        sh '''
-            echo "===== ECR LOGIN ====="
 
-            ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        stage('ECR Login') {
+            when {
+                branch 'main'
+            }
 
-            aws ecr get-login-password \
-              --region ${AWS_REGION} \
-            | docker login \
-              --username AWS \
-              --password-stdin \
-              ${ECR_REGISTRY}
-        '''
+            steps {
+                sh '''
+                    echo "===== ECR LOGIN ====="
+
+                    ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+                    aws ecr get-login-password \
+                      --region ${AWS_REGION} \
+                    | docker login \
+                      --username AWS \
+                      --password-stdin \
+                      ${ECR_REGISTRY}
+                '''
+            }
+        }
+
+        stage('ECR Tag') {
+            when {
+                branch 'main'
+            }
+
+            steps {
+                sh '''
+                    echo "===== ECR TAG ====="
+
+                    ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+                    ECR_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+
+                    echo "Local image:"
+                    echo "${IMAGE_NAME}:${IMAGE_TAG}"
+
+                    echo "ECR image:"
+                    echo "${ECR_IMAGE}"
+
+                    docker tag \
+                      ${IMAGE_NAME}:${IMAGE_TAG} \
+                      ${ECR_IMAGE}
+                '''
+            }
+        }
+
+        stage('ECR Push') {
+            when {
+                branch 'main'
+            }
+
+            steps {
+                sh '''
+                    echo "===== ECR PUSH ====="
+
+                    ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+                    ECR_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+
+                    docker push ${ECR_IMAGE}
+                '''
+            }
+        }
+
+        stage('Verify ECR Image') {
+            when {
+                branch 'main'
+            }
+
+            steps {
+                sh '''
+                    echo "===== VERIFY ECR IMAGE ====="
+
+                    aws ecr describe-images \
+                      --region ${AWS_REGION} \
+                      --repository-name ${ECR_REPOSITORY} \
+                      --image-ids imageTag=${IMAGE_TAG}
+                '''
+            }
+        }
     }
-}
-stage('ECR Tag') {
-    when {
-        branch 'main'
-    }
 
-    steps {
-        sh '''
-            echo "===== ECR TAG ====="
+    post {
+        success {
+            echo '===== CI RESULT ====='
+            echo 'CI PIPELINE PASSED'
+        }
 
-            ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-            ECR_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
-
-            echo "Local image:"
-            echo "${IMAGE_NAME}:${IMAGE_TAG}"
-
-            echo "ECR image:"
-            echo "${ECR_IMAGE}"
-
-            docker tag \
-              ${IMAGE_NAME}:${IMAGE_TAG} \
-              ${ECR_IMAGE}
-        '''
-    }
-}
-stage('ECR Push') {
-    when {
-        branch 'main'
-    }
-
-    steps {
-        sh '''
-            echo "===== ECR PUSH ====="
-
-            ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-            ECR_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
-
-            docker push ${ECR_IMAGE}
-        '''
-    }
-}
-stage('Verify ECR Image') {
-    when {
-        branch 'main'
-    }
-
-    steps {
-        sh '''
-            echo "===== VERIFY ECR IMAGE ====="
-
-            aws ecr describe-images \
-              --region ${AWS_REGION} \
-              --repository-name ${ECR_REPOSITORY} \
-              --image-ids imageTag=${IMAGE_TAG}
-        '''
-    }
-}
-}
-post {
-    success {
-        echo '===== CI RESULT ====='
-        echo 'CI PIPELINE PASSED'
-    }
-
-    failure {
-        echo '===== CI RESULT ====='
-        echo 'CI PIPELINE FAILED'
+        failure {
+            echo '===== CI RESULT ====='
+            echo 'CI PIPELINE FAILED'
+        }
     }
 }
