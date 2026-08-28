@@ -2,6 +2,8 @@ FROM amazoncorretto:21-alpine
 
 WORKDIR /app
 
+RUN apk upgrade --no-cache
+
 RUN addgroup -S medcloud && \
     adduser -S medcloud -G medcloud
 
