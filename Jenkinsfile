@@ -183,29 +183,46 @@ pipeline {
                 '''
             }
         }
-       stage('ECR Security Scan') {
-          when {
-         branch 'main'
+stage('ECR Security Scan') {
+    when {
+        branch 'main'
     }
 
     steps {
         sh '''
             echo "===== ECR SECURITY SCAN ====="
+            echo "Waiting for ECR scan to become available..."
 
-            echo "Waiting for ECR vulnerability scan to complete..."
+            SCAN_READY=false
 
-            aws ecr wait image-scan-complete \
-              --region ${AWS_REGION} \
-              --repository-name ${ECR_REPOSITORY} \
-              --image-id imageTag=${IMAGE_TAG}
+            for ATTEMPT in $(seq 1 30); do
 
-            echo "===== SCAN STATUS ====="
+                STATUS=$(aws ecr describe-image-scan-findings \
+                  --region ${AWS_REGION} \
+                  --repository-name ${ECR_REPOSITORY} \
+                  --image-id imageTag=${IMAGE_TAG} \
+                  --query 'imageScanStatus.status' \
+                  --output text 2>/dev/null || true)
 
-            aws ecr describe-image-scan-findings \
-              --region ${AWS_REGION} \
-              --repository-name ${ECR_REPOSITORY} \
-              --image-id imageTag=${IMAGE_TAG} \
-              --query 'imageScanStatus'
+                echo "Attempt ${ATTEMPT}: scan status = ${STATUS:-NOT_AVAILABLE}"
+
+                if [ "$STATUS" = "COMPLETE" ]; then
+                    SCAN_READY=true
+                    break
+                fi
+
+                if [ "$STATUS" = "FAILED" ]; then
+                    echo "ECR vulnerability scan FAILED"
+                    exit 1
+                fi
+
+                sleep 5
+            done
+
+            if [ "$SCAN_READY" != "true" ]; then
+                echo "Security scan did not complete within expected time."
+                exit 1
+            fi
 
             echo "===== VULNERABILITY COUNTS ====="
 
@@ -257,8 +274,7 @@ pipeline {
         '''
     }
 }
-    }
-
+}
     post {
         success {
             echo '===== CI RESULT ====='
