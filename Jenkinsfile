@@ -183,6 +183,80 @@ pipeline {
                 '''
             }
         }
+       stage('ECR Security Scan') {
+          when {
+         branch 'main'
+    }
+
+    steps {
+        sh '''
+            echo "===== ECR SECURITY SCAN ====="
+
+            echo "Waiting for ECR vulnerability scan to complete..."
+
+            aws ecr wait image-scan-complete \
+              --region ${AWS_REGION} \
+              --repository-name ${ECR_REPOSITORY} \
+              --image-id imageTag=${IMAGE_TAG}
+
+            echo "===== SCAN STATUS ====="
+
+            aws ecr describe-image-scan-findings \
+              --region ${AWS_REGION} \
+              --repository-name ${ECR_REPOSITORY} \
+              --image-id imageTag=${IMAGE_TAG} \
+              --query 'imageScanStatus'
+
+            echo "===== VULNERABILITY COUNTS ====="
+
+            COUNTS=$(aws ecr describe-image-scan-findings \
+              --region ${AWS_REGION} \
+              --repository-name ${ECR_REPOSITORY} \
+              --image-id imageTag=${IMAGE_TAG} \
+              --query '[imageScanFindings.findingSeverityCounts.CRITICAL,
+                        imageScanFindings.findingSeverityCounts.HIGH,
+                        imageScanFindings.findingSeverityCounts.MEDIUM,
+                        imageScanFindings.findingSeverityCounts.LOW,
+                        imageScanFindings.findingSeverityCounts.INFORMATIONAL]' \
+              --output text)
+
+            set -- $COUNTS
+
+            CRITICAL=$1
+            HIGH=$2
+            MEDIUM=$3
+            LOW=$4
+            INFO=$5
+
+            [ "$CRITICAL" = "None" ] && CRITICAL=0
+            [ "$HIGH" = "None" ] && HIGH=0
+            [ "$MEDIUM" = "None" ] && MEDIUM=0
+            [ "$LOW" = "None" ] && LOW=0
+            [ "$INFO" = "None" ] && INFO=0
+
+            echo "Critical : $CRITICAL"
+            echo "High     : $HIGH"
+            echo "Medium   : $MEDIUM"
+            echo "Low      : $LOW"
+            echo "Info     : $INFO"
+
+            echo "===== SECURITY POLICY ====="
+
+            if [ "$CRITICAL" -gt 0 ]; then
+                echo "SECURITY GATE FAILED"
+                echo "Critical vulnerabilities detected: $CRITICAL"
+                exit 1
+            fi
+
+            if [ "$HIGH" -gt 0 ]; then
+                echo "WARNING: $HIGH HIGH vulnerabilities detected."
+                echo "Security review is required."
+            fi
+
+            echo "SECURITY GATE PASSED"
+        '''
+    }
+}
     }
 
     post {
