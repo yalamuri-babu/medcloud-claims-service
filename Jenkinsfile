@@ -8,6 +8,8 @@ pipeline {
         AWS_REGION = 'ap-south-1'
         AWS_ACCOUNT_ID = '776751404462'
         ECR_REPOSITORY = 'medcloud-claims-service'
+        TRIVY_CACHE_DIR = '/home/jenkins/trivy-cache'
+        TMPDIR = '/home/jenkins/trivy-tmp'
     }
 
     stages {
@@ -104,7 +106,29 @@ pipeline {
             }
         }
 
-        stage('ECR Login') {
+          stage('Trivy Scan') {
+             steps {
+                sh '''
+                  echo "Running Trivy vulnerability scan..."
+
+                  trivy image \
+                  --scanners vuln \
+                  --severity CRITICAL,HIGH,MEDIUM \
+                  --exit-code 0 \
+                   ${IMAGE_NAME}:${IMAGE_TAG}
+
+                 echo "Applying CRITICAL vulnerability gate..."
+
+                 trivy image \
+                --scanners vuln \
+                --severity CRITICAL \
+                --exit-code 1 \
+                ${IMAGE_NAME}:${IMAGE_TAG}
+                '''
+            }
+        }
+ 
+          stage('ECR Login') {
             when {
                 branch 'main'
             }
