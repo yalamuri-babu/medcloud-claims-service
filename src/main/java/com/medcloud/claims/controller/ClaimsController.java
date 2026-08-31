@@ -26,4 +26,23 @@ public class ClaimsController {
                 claimsService.receiveClaim(claim)
         );
     }
+@GetMapping("/{claimId}")
+public ResponseEntity<Claim> getClaim(
+        @PathVariable String claimId) {
+
+    Claim claim = claimsService.getClaim(claimId);
+
+    if (claim == null) {
+        return ResponseEntity.notFound().build();
+    }
+
+    return ResponseEntity.ok(claim);
+}
+
+@GetMapping
+public ResponseEntity<?> getAllClaims() {
+    return ResponseEntity.ok(
+            claimsService.getAllClaims()
+    );
+}
 }
