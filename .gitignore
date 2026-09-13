@@ -36,3 +36,19 @@ dependency-reduced-pom.xml
 
 # macOS
 .DS_Store
+# Terraform working directory
+**/.terraform/*
+
+# Terraform state
+*.tfstate
+*.tfstate.*
+
+# Terraform plan files
+*.tfplan
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Local state lock
+.terraform.tfstate.lock.info
