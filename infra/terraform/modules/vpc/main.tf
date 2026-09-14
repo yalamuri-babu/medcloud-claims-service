@@ -11,59 +11,48 @@ resource "aws_vpc" "medcloud_dev" {
   }
 }
 
-resource "aws_subnet" "public_a" {
+# -------------------------
+# Public Subnets
+# -------------------------
+
+resource "aws_subnet" "public" {
+  for_each = var.public_subnets
+
   vpc_id                  = aws_vpc.medcloud_dev.id
-  cidr_block              = "10.20.1.0/24"
-  availability_zone       = "ap-south-1a"
+  cidr_block              = each.value.cidr
+  availability_zone       = each.value.az
   map_public_ip_on_launch = true
 
   tags = {
-    Name        = "medcloud-${var.environment}-public-a"
+    Name        = "medcloud-${var.environment}-public-${each.key}"
     Environment = var.environment
     Project     = var.project_name
     ManagedBy   = "Terraform"
   }
 }
 
-resource "aws_subnet" "public_b" {
-  vpc_id                  = aws_vpc.medcloud_dev.id
-  cidr_block              = "10.20.2.0/24"
-  availability_zone       = "ap-south-1b"
-  map_public_ip_on_launch = true
+# -------------------------
+# Private Subnets
+# -------------------------
 
-  tags = {
-    Name        = "medcloud-${var.environment}-public-b"
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = "Terraform"
-  }
-}
+resource "aws_subnet" "private" {
+  for_each = var.private_subnets
 
-resource "aws_subnet" "private_a" {
   vpc_id            = aws_vpc.medcloud_dev.id
-  cidr_block        = "10.20.11.0/24"
-  availability_zone = "ap-south-1a"
+  cidr_block        = each.value.cidr
+  availability_zone = each.value.az
 
   tags = {
-    Name        = "medcloud-${var.environment}-private-a"
+    Name        = "medcloud-${var.environment}-private-${each.key}"
     Environment = var.environment
     Project     = var.project_name
     ManagedBy   = "Terraform"
   }
 }
 
-resource "aws_subnet" "private_b" {
-  vpc_id            = aws_vpc.medcloud_dev.id
-  cidr_block        = "10.20.12.0/24"
-  availability_zone = "ap-south-1b"
-
-  tags = {
-    Name        = "medcloud-${var.environment}-private-b"
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = "Terraform"
-  }
-}
+# -------------------------
+# Internet Gateway
+# -------------------------
 
 resource "aws_internet_gateway" "medcloud_dev" {
   vpc_id = aws_vpc.medcloud_dev.id
@@ -75,6 +64,10 @@ resource "aws_internet_gateway" "medcloud_dev" {
     ManagedBy   = "Terraform"
   }
 }
+
+# -------------------------
+# Public Route Table
+# -------------------------
 
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.medcloud_dev.id
@@ -92,12 +85,16 @@ resource "aws_route_table" "public" {
   }
 }
 
+# -------------------------
+# Public Route Associations
+# -------------------------
+
 resource "aws_route_table_association" "public_a" {
-  subnet_id      = aws_subnet.public_a.id
+  subnet_id      = aws_subnet.public["a"].id
   route_table_id = aws_route_table.public.id
 }
 
 resource "aws_route_table_association" "public_b" {
-  subnet_id      = aws_subnet.public_b.id
+  subnet_id      = aws_subnet.public["b"].id
   route_table_id = aws_route_table.public.id
 }

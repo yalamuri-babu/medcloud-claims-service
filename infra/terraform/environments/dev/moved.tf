@@ -5,22 +5,22 @@ moved {
 
 moved {
   from = aws_subnet.public_a
-  to   = module.vpc.aws_subnet.public_a
+  to   = module.vpc.aws_subnet.public["a"]
 }
 
 moved {
   from = aws_subnet.public_b
-  to   = module.vpc.aws_subnet.public_b
+  to   = module.vpc.aws_subnet.public["b"]
 }
 
 moved {
   from = aws_subnet.private_a
-  to   = module.vpc.aws_subnet.private_a
+  to   = module.vpc.aws_subnet.private["a"]
 }
 
 moved {
   from = aws_subnet.private_b
-  to   = module.vpc.aws_subnet.private_b
+  to   = module.vpc.aws_subnet.private["b"]
 }
 
 moved {
