@@ -26,3 +26,9 @@ private_subnets = {
     az   = "ap-south-1b"
   }
 }
+cluster_node_config = {
+  instance_type = "t3.medium"
+  min_nodes     = 1
+  desired_nodes = 2
+  max_nodes     = 3
+}

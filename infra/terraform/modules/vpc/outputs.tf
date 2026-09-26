@@ -6,15 +6,18 @@ output "public_subnet_ids" {
   description = "IDs of public subnets"
 
   value = [
-    aws_subnet.public["a"].id,
-    aws_subnet.public["b"].id
+    for subnet in aws_subnet.public : subnet.id
   ]
 }
+
 output "private_subnet_ids" {
   description = "IDs of private subnets"
 
   value = [
-    aws_subnet.private["a"].id,
-    aws_subnet.private["b"].id
+    for subnet in aws_subnet.private : subnet.id
   ]
+}
+output "available_azs" {
+  description = "Availability Zones available in the current AWS region"
+  value       = data.aws_availability_zones.available.names
 }

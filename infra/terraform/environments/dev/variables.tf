@@ -34,3 +34,13 @@ variable "private_subnets" {
     az   = string
   }))
 }
+variable "cluster_node_config" {
+  description = "EKS managed node group configuration"
+
+  type = object({
+    instance_type = string
+    min_nodes     = number
+    desired_nodes = number
+    max_nodes     = number
+  })
+}

@@ -42,3 +42,12 @@ moved {
   from = aws_route_table_association.public_b
   to   = module.vpc.aws_route_table_association.public_b
 }
+moved {
+  from = module.vpc.aws_route_table_association.public_a
+  to   = module.vpc.aws_route_table_association.public["a"]
+}
+
+moved {
+  from = module.vpc.aws_route_table_association.public_b
+  to   = module.vpc.aws_route_table_association.public["b"]
+}
