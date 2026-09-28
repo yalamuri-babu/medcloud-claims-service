@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: claims-service
+  namespace: medcloud-dev
+
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: claims-service
+
+  template:
+    metadata:
+      labels:
+        app: claims-service
+
+    spec:
+      containers:
+        - name: claims-service
+          image: 776751404462.dkr.ecr.ap-south-1.amazonaws.com/medcloud-claims-service:4422ffd4
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 8080
+
+          envFrom:
+            - configMapRef:
+                name: claims-service-config
+            - secretRef:
+                name: claims-service-secret
+
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 24
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3

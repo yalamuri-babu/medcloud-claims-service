@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: claims-service-config
+  namespace: medcloud-dev
+data:
+  APP_ENV: "dev"
+  CLAIMS_LOG_LEVEL: "INFO"
